@@ -1,0 +1,151 @@
+import matplotlib.pyplot as plt
+import numpy as np
+import trajetoriabola
+from scipy.optimize import minimize
+def distanciabola(point, x_bola, y_bola):
+    x_robô, y_robô = point
+    min_distance = float('inf')
+    for x_ball, y_ball in zip(x_bola, y_bola):
+        distance = np.sqrt((x_ball - x_robô)**2 + (y_ball - y_robô)**2)
+        if distance < min_distance:
+            min_distance = distance
+    return min_distance
+
+x = trajetoriabola.x
+y = trajetoriabola.y
+t = trajetoriabola.t
+vx_bola = [(x[i + 1] - x[i]) / (t[i + 1] - t[i]) for i in range(len(x) - 1)]
+vy_bola = [(y[i + 1] - y[i]) / (t[i + 1] - t[i]) for i in range(len(y) - 1)]
+t_v = t[:-1]
+ax_bola = [(vx_bola[i + 1] - vx_bola[i]) / (t[i + 1] - t[i]) for i in range(len(vx_bola) - 1)]
+ay_bola = [(vy_bola[i + 1] - vy_bola[i]) / (t[i + 1] - t[i]) for i in range(len(vy_bola) - 1)]
+t_a = t[:-2]
+diametro_robo = 180 #em mm
+diametro_bola = 21 #em mm
+
+limite_x = 9
+limite_y = 6
+# Filtrar os valores de x e y
+x_filtrado = [valor for valor in x if valor <= limite_x]
+y_filtrado = [valor for valor in y if valor <= limite_y]
+# Note que você deve garantir que x_filtrado e y_filtrado tenham o mesmo tamanho após o filtro
+# Isso pode ser feito ajustando o filtro ou truncando os arrays para o menor tamanho
+tamanho_filtrado = min(len(x_filtrado), len(y_filtrado))
+x_filtrado = x_filtrado[:tamanho_filtrado]
+y_filtrado = y_filtrado[:tamanho_filtrado]
+t_filtrado = t[:tamanho_filtrado]
+# Define a posição inicial do robô
+x0_robô = float(input("Insira a posição X inicial do robô: "))
+y0_robô = float(input("Insira a posição Y inicial do robô: "))
+
+# Usa a função minimize para encontrar o ponto de interceptação
+p_interceptação = minimize(distanciabola, (x0_robô, y0_robô), args=(x_filtrado, y_filtrado))
+
+# Extrai o ponto de interceptação estimado
+intercept_x_estimado, intercept_y_estimado = p_interceptação.x
+robot_to_intercept_x = np.linspace(x0_robô, intercept_x_estimado, num=100)
+robot_to_intercept_y = np.linspace(y0_robô, intercept_y_estimado, num=100)
+print(intercept_x_estimado, intercept_y_estimado)
+# Plot das trajetórias x do robô e da bola até o ponto de interceptação estimado
+indice_intercept_x = np.argmax(np.array(x_filtrado) >= intercept_x_estimado)
+indice_intercept_y = np.argmax(np.array(y_filtrado) >= intercept_y_estimado)
+indice_intercept = min(indice_intercept_x, indice_intercept_y)
+
+distancias = [distance_to_ball((intercept_x_estimado, intercept_y_estimado), [x_robô], [y_robô]) for x_robô, y_robô in zip(x_filtrado, y_filtrado)]
+
+#Gráfico da distância relativa
+#plt.plot(t_filtrado[:indice_intercept], distancias[:indice_intercept], label='Distância Relativa entre o Robô e a Bola')
+#plt.xlabel('Tempo')
+#plt.ylabel('Distância Relativa (d)')
+#plt.xlim([0, 9])
+#plt.ylim([0, 9])
+#plt.title('Distância Relativa entre o Robô e a Bola em Função do Tempo até o Instante de Interceptação')
+#plt.legend()
+#plt.grid()
+#plt.show()
+
+# Gráfico no plano xy com o ponto de interceptação estimado
+#plt.figure()
+#plt.plot(x_filtrado, y_filtrado, label='Trajetória da bola')
+#plt.plot(robot_to_intercept_x, robot_to_intercept_y, label='Trajetória do robô até interceptação')
+#plt.scatter(x0_robô, y0_robô, label='Posição inicial do robô', color='red', marker='o')
+#plt.scatter(intercept_x_estimado, intercept_y_estimado, color='orange', marker='x', label='Interceptação estimada')
+#plt.xlabel('Posição X')
+#plt.ylabel('Posição Y')
+#plt.xlim([0, 9])
+#plt.title('Trajetória do Robô Interceptando e Chutando a Bola')
+#plt.legend()
+#plt.grid()
+#plt.show()
+
+#Gráfico da posição x por t
+#t_intervalo_x = np.linspace(0, t_filtrado[indice_intercept_x], num=100)
+#plt.figure()
+#plt.plot(t_filtrado[:indice_intercept_x], x_filtrado[:indice_intercept_x], label='Trajetória x da bola')
+#plt.plot(t_intervalo_x, robot_to_intercept_x, label='Trajetória x do robô')
+#plt.xlabel('Tempo')
+#plt.ylabel('Posição X')
+#plt.xlim([0, 9])
+#plt.ylim([0, 9])
+#plt.title('Trajetória X da Bola e do Robô até Interceptação Estimada')
+#plt.legend()
+#plt.grid()
+#plt.show()
+
+#Gráfico da posição y por t
+#t_intervalo_y = np.linspace(0, t_filtrado[indice_intercept_y], num=100)
+#plt.figure()
+#plt.plot(t_filtrado[:indice_intercept_y], y_filtrado[:indice_intercept_y], label='Trajetória x da bola')
+#plt.plot(t_intervalo_y, robot_to_intercept_y, label='Trajetória x do robô')
+#plt.xlabel('Tempo')
+#plt.ylabel('Posição X')
+#plt.xlim([0, 9])
+#plt.ylim([0, 9])
+#plt.title('Trajetória X da Bola e do Robô até Interceptação Estimada')
+#plt.legend()
+#plt.grid()
+#plt.show()
+
+#Gráfico do componente vx da velocidade da bola e do robo em função do tempo até o instante de interceptação
+#plt.plot(t_v[:indice_intercept_x], vx_bola[:indice_intercept_x], label='Componente vx da velocidade da bola')
+#plt.xlabel('Tempo')
+#plt.ylabel('Componente vx da velocidade')
+#plt.xlim([0, 9])
+#plt.ylim([0, 9])
+#plt.title('Componente vx da Velocidade da Bola em Função do Tempo até o Instante de Interceptação')
+#plt.legend()
+#plt.grid()
+#plt.show()
+
+#Gráfico do componente vy da velocidade da bola e do robo em função do tempo até o instante de interceptação
+#plt.plot(t_v[:indice_intercept_y], vy_bola[:indice_intercept_y], label='Componente vx da velocidade da bola')
+#plt.xlabel('Tempo')
+#plt.ylabel('Componente vx da velocidade')
+#plt.xlim([0, 9])
+#plt.ylim([0, 9])
+#plt.title('Componente vx da Velocidade da Bola em Função do Tempo até o Instante de Interceptação')
+#plt.legend()
+#plt.grid()
+#plt.show()
+
+#Gráfico do componente ax da velocidade da bola e do robo em função do tempo até o instante de interceptação
+#plt.plot(t_a[:indice_intercept_y], ax_bola[:indice_intercept_y], label='Componente vx da velocidade da bola')
+#plt.xlabel('Tempo')
+#plt.ylabel('Componente ax da aceleração')
+#plt.xlim([0, 9])
+#plt.ylim([0, 9])
+#plt.title('Componente ax da Aceleração da Bola em Função do Tempo até o Instante de Interceptação')
+#plt.legend()
+#plt.grid()
+#plt.show()
+
+#Gráfico do componente ay da velocidade da bola e do robo em função do tempo até o instante de interceptação
+#plt.plot(t_a[:indice_intercept_y], ax_bola[:indice_intercept_y], label='Componente vx da velocidade da bola')
+#plt.xlabel('Tempo')
+#plt.ylabel('Componente ax da aceleração')
+#plt.xlim([0, 9])
+#plt.ylim([0, 9])
+#plt.title('Componente ax da Aceleração da Bola em Função do Tempo até o Instante de Interceptação')
+#plt.legend()
+#plt.grid()
+#plt.show()
